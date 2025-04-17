@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+set -o pipefail
+
+if [ $(uname -a | grep -ci Ubuntu) -ge 1 ]; then
+    sudo modprobe mpls-router mpls-iptunnel vrf
+fi
+
+# Run foundational frr daemons in background
+sudo zebra &
+sleep 3
+sudo mgmtd &
+sleep 3
+
+# Run protocol-specific daemons in background
+sudo ospfd &
+sleep 3
+
+# Boot up vtysh
+sudo vtysh -b
+
+while true ; do sleep 365d ; done
