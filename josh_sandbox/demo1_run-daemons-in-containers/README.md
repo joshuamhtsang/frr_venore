@@ -11,14 +11,25 @@ $ docker build -t frr-ubuntu22:latest -f josh_sandbox/demo1_run-daemons-in-conta
 
 ## Create a another network using docker
 
-To make the demo more reproducible, it's good pratise to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge with the assigned network specification.
+To make the demo more reproducible, it's good practice to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge with the assigned network specification.
 
-Create the network with this docker command:
+Create the network (called `net1`) with this docker command:
 ~~~
 docker network create --driver=bridge --subnet=10.0.1.0/24 net1
 ~~~
 
-Containers created on this network (with the `--network net1` flag during `docker run`) will be assigned ascending IP addressed from `10.0.1.2` and upwards on the `eth0` interface. For this demo, the OSPF daemons on r1 and r2 will be assigned to work these `eth0` interfaces.
+Containers created on this network (with the `--network net1` flag during `docker run`) will be assigned ascending IP addressed from `10.0.1.2` and upwards on the `eth0` interface. For this demo, the OSPF daemons on r1 and r2 will be assigned to work these `eth0` interfaces.  The `10.0.1.1` address will actually be the gateway (which you can verify with `docker network inspect net1`).  You can even see this network with `ifconfig`:
+
+~~~
+$ ifconfig
+br-c4c5fe0bfed2: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        inet 10.0.1.1  netmask 255.255.255.0  broadcast 10.0.1.255
+        ether ae:4c:8f:27:c8:c5  txqueuelen 0  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 13 overruns 0  carrier 0  collisions 0
+~~~
 
 
 ## Run a container for router 1 (r1)
@@ -36,13 +47,48 @@ Run a container for router 2 (r2).
 $ docker run -d --init --privileged --name frr-ubuntu22-demo1-r2 --network net1 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo1_run-daemons-in-containers/frrconf_files/r2:/etc/frr frr-ubuntu22:latest
 ~~~
 
-## Some manual testing
-OSPF neighbor successfully found! In r1:
+## Checking OSPF is working
+
+1. SHow various OSPF-related tables. In r1:
+~~~
+$ docker exec -it frr-ubuntu22-demo1-r1 bash
+~~~
+Use `vtysh` to see the `Neighbor Table`:
 ~~~
 ~/frr$ sudo vtysh
 
-710ee4cf1c89# show ip ospf neighbor
+eea8ed44d4b7# show ip ospf neighbor
 
 Neighbor ID     Pri State           Up Time         Dead Time Address         Interface                        RXmtL RqstL DBsmL
-2.2.2.2           1 2-Way/DROther   15.894s           34.105s 10.0.1.3      eth0:10.0.1.2                      0     0     0
+2.2.2.2           1 Full/DR         49.703s           30.307s 10.0.1.3        eth0:10.0.1.2                        0     0     0
+~~~
+The `Link State Table` 
+~~~
+eea8ed44d4b7# show ip ospf database
+
+       OSPF Router with ID (1.1.1.1)
+
+                Router Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age  Seq#       CkSum  Link count
+1.1.1.1        1.1.1.1          415 0x80000004 0x2301 1
+2.2.2.2        2.2.2.2          416 0x80000003 0xe635 1
+
+                Net Link States (Area 0.0.0.0)
+
+Link ID         ADV Router      Age  Seq#       CkSum
+10.0.1.3       2.2.2.2          416 0x80000001 0x2018
+~~~
+And the `Routing Table` (RIB):
+~~~
+eea8ed44d4b7# show ip ospf route 
+============ OSPF network routing table ============
+N    10.0.1.0/24           [10] area: 0.0.0.0
+                           directly attached to eth0
+
+============ OSPF router routing table =============
+
+============ OSPF external routing table ===========
+
+
 ~~~
