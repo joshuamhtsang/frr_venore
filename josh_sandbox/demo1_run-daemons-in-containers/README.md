@@ -2,6 +2,26 @@
 
 The key to this demo is the script `docker-start-1-StartDaemons` [here](./dockerfiles/docker-start-1-StartDaemons) which runs the frr daemons in the background.  Note there is an (rather unsafe) way to run the daemons using systemd by using the `cap_add=net_raw` etc. options when running a container, but this approach is not used.
 
+## Network topology of demo 1
+
+A new network `net1` will be created with 2 docker containers (`r1` and `r2`) attached to this network each running the frr OSPF daemon.  The daemons will each target the eth0 interface and the `10.0.1.0/24` network.
+
+~~~
+┌─────────────┐     ┌─────────────┐              ┌────────────────────┐
+│     Host    │     │             │              │──────────┐         │
+│             │     │             │    veth1     │   eth0   │   r1    │
+│┌────────────│     │             ┼──────────────┼(10.0.1.2)│         │
+││  [Gateway] │     │    net1     │              │──────────┘         │
+││   br-if1  ─│─────┼(10.0.1.0/24)│              └────────────────────┘
+││ (10.0.1.1) │     │             │              ┌────────────────────┐
+│└────────────│     │             │              │──────────┐         │
+└─────────────┘     │             │    veth2     │   eth0   │   r2    │
+                    │             ┼──────────────┼(10.0.1.3)│         │
+                    └─────────────┘              │──────────┘         │
+                                                 └────────────────────┘
+~~~
+
+The expectation is that the OSPF daemons to see neighbouring OSPF routers, and these will be evident in the OSPF neighbor, link state database and routing tables.
 
 ## Docker build image command
 To build the docker images, run the following docker commands from the repository (frr_venore) root. Both routers r1 and r2 will be based off the same image.
@@ -9,7 +29,7 @@ To build the docker images, run the following docker commands from the repositor
 $ docker build -t frr-ubuntu22:latest -f josh_sandbox/demo1_run-daemons-in-containers/dockerfiles/Dockerfile_1_StartDaemons .
 ~~~
 
-## Create a another network using docker
+## Create a new network using docker
 
 To make the demo more reproducible, it's good practice to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge with the assigned network specification.
 
