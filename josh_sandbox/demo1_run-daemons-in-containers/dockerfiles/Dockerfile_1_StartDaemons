@@ -33,6 +33,8 @@ RUN apt update && apt upgrade -y && \
             screen \
             texinfo \
             tmux \
+            netcat-traditional \
+            iperf3 \
     && \
     # Protobuf build requirements
     apt-get install -y \

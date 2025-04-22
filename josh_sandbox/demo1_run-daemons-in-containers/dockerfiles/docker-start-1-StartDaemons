@@ -8,13 +8,15 @@ fi
 
 # Run foundational frr daemons in background
 sudo zebra &
-sleep 3
+sleep 2
 sudo mgmtd &
-sleep 3
+sleep 2
 
 # Run protocol-specific daemons in background
 sudo ospfd &
-sleep 3
+sleep 2
+sudo ldpd &
+sleep 2
 
 # Boot up vtysh
 sudo vtysh -b

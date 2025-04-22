@@ -57,12 +57,14 @@ Things to note:
 - This container for r1 MUST be run before r2, so it gets the `10.0.1.2` IP address.
 - Note the `--network net1` flag to ensure this joins the `10.0.1.0/24` network created above.
 - Note the volume binding argument (`-v`) I used to put the necessary `frr.conf` file into the location expected by the frr daemons.
+
+Run the following command from the repository root:
 ~~~
 $ docker run -d --init --privileged --name frr-ubuntu22-demo1-r1 --network net1 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo1_run-daemons-in-containers/frrconf_files/r1:/etc/frr frr-ubuntu22:latest
 ~~~
 
 ## Run a container for router 2 (r2)
-Run a container for router 2 (r2).
+Run a container for router 2 (r2).  Run the following command from the repository root:
 ~~~
 $ docker run -d --init --privileged --name frr-ubuntu22-demo1-r2 --network net1 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo1_run-daemons-in-containers/frrconf_files/r2:/etc/frr frr-ubuntu22:latest
 ~~~

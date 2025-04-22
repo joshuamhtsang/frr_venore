@@ -4,11 +4,14 @@
 TO DO: PUT DIAGRAM HERE.
 
 
+## Create new network `net2` (10.0.2.0/24)
 
 Create the new network `10.0.2.0/24` and call it `net2`:
 ~~~
 $ docker network create --driver=bridge --subnet=10.0.2.0/24 net2
 ~~~
+
+## Connect `r2` to the `net2` network
 
 Connect the container `r2` to this new `net2` network.  This will create another network interface (`eth1`) on `r2` and assign it the IP address `10.0.2.2`:
 ~~~
@@ -41,7 +44,12 @@ eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ~~~
 
-Set up OSPF daemon on `r2` router `2.2.2.2`:
+## Set up OSPF daemon on r2
+
+Set up the zebra and OSPF daemons on `r2` router `2.2.2.2` by:
+1. Enabling ospf on the new `eth1` interface which connects to the new `net2` network (`10.0.2.0/24`)
+2. Setting the network address, subnet and OSPF area.
+
 ~~~
 ~/frr$ sudo vtysh
 
@@ -65,6 +73,8 @@ N    10.0.2.0/24           [10] area: 0.0.0.0
 ============ OSPF external routing table ===========
 ~~~
 
+## Start container for r3
+
 Note the `r2` OSPF daemon still only sees one neighboring router.  This is because we haven't spun up container `r3` with its own OSPF daemon.
 ~~~
 5ca07541895a# show ip ospf neighbor
@@ -77,6 +87,8 @@ Spin up `r3` on network `net2` and give it the appropriate `frr.conf` which actu
 ~~~
 frr_venore$ docker run -d --init --privileged --name frr-ubuntu22-demo1-r3 --network net2 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo2_ospf-across-two-networks/frrconf_files/r3:/etc/frr frr-ubuntu22:latest
 ~~~
+
+## Checking OSPF daemon status
 
 Now `r2`'s OSPF daemon can see the OSPF router `3.3.3.3` running on `r3` in the neighbor table:
 ~~~
