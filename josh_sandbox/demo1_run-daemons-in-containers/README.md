@@ -1,6 +1,6 @@
 # Demo 1: Running OSPF daemon and other foundational daemons in a docker container
 
-The key to this demo is the script `docker-start-1-StartDaemons` [here](./dockerfiles/docker-start-1-StartDaemons) which runs the frr daemons in the background.  Note there is an (rather unsafe) way to run the daemons using systemd by using the `cap_add=net_raw` etc. options when running a container, but this approach is not used.
+The key to this demo is the script `docker-start-1-StartDaemons` [here](./dockerfiles/docker-start-1-StartDaemons) which runs the frr daemons in the background.  Note there is a (rather unsafe) way to run the daemons using systemd by using the `cap_add=net_raw` etc. options when running a container, but this approach is not used (it is used in [this](https://github.com/ksator/frrouting_demo) github repo by ksator though ).
 
 ## Network topology of demo 1
 
@@ -71,7 +71,7 @@ $ docker run -d --init --privileged --name frr-ubuntu22-demo1-r2 --network net1 
 
 ## Checking OSPF is working
 
-1. SHow various OSPF-related tables. In r1:
+1. Show various OSPF-related tables. In r1:
 ~~~
 $ docker exec -it frr-ubuntu22-demo1-r1 bash
 ~~~

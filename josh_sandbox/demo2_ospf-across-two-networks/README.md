@@ -1,7 +1,37 @@
 # Demo 2: OSPF route discovery across two networks
 
+## Network topology of demo 2
 
-TO DO: PUT DIAGRAM HERE.
+This demo extends demo 1 by adding another router `r3` which connects to `r2` through the network `net2` (`10.0.2.0/24`).  The goal is for the ospf daemons in each container to discover the other network even though they are not 'directly' connected, more explicitly:
+
+1. `r1` to discover the `10.0.2.0/24` network
+2. `r3` to discover the `10.0.1.0/24` network.
+
+~~~
+                     ┌─────────────┐              ┌────────────────────┐
+                     │             │              │──────────┐         │
+                     │             │    veth1     │   eth0   │   r1    │
+┌─────────────┐      │             ┼──────────────┼(10.0.1.2)│         │
+│     Host    │  ┌───┼    net1     │              │──────────┘         │
+│             │  │   │(10.0.1.0/24)│              └────────────────────┘
+│┌────────────│  │   │             │              ┌────────────────────┐
+││  [Gateway] │  │   │             │              │──────────┐         │
+││   br-if1  ─├──┘   │             │    veth2     │   eth0   │         │
+││ (10.0.1.1) │      │             ┼──────────────┼(10.0.1.3)│         │
+│└────────────│      └─────────────┘              │──────────┘         │
+│             │                                   │              r2    │
+│┌────────────│      ┌─────────────┐              │──────────┐         │
+││  [Gateway] │      │             │    veth3     │   eth1   │         │
+││   br-if2  ─├──┐   │             ┼──────────────┼(10.0.2.2)│         │
+││ (10.0.2.1) │  │   │             │              │──────────┘         │
+│└────────────│  └───┼    net2     │              └────────────────────┘
+│             │      │(10.0.2.0/24)│              ┌────────────────────┐
+│             │      │             │              │──────────┐         │
+└─────────────┘      │             │    veth4     │   eth0   │   r3    │
+                     │             ┼──────────────┼(10.0.2.3)│         │
+                     │             │              │──────────┘         │
+                     └─────────────┘              └────────────────────┘
+~~~
 
 
 ## Create new network `net2` (10.0.2.0/24)
@@ -44,7 +74,7 @@ eth1: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 
 ~~~
 
-## Set up OSPF daemon on r2
+## Set up OSPF daemon on `r2`
 
 Set up the zebra and OSPF daemons on `r2` router `2.2.2.2` by:
 1. Enabling ospf on the new `eth1` interface which connects to the new `net2` network (`10.0.2.0/24`)
@@ -73,9 +103,9 @@ N    10.0.2.0/24           [10] area: 0.0.0.0
 ============ OSPF external routing table ===========
 ~~~
 
-## Start container for r3
+## Start container for `r3`
 
-Note the `r2` OSPF daemon still only sees one neighboring router.  This is because we haven't spun up container `r3` with its own OSPF daemon.
+Note the `r2` OSPF daemon still only sees one neighboring router.  This is because we haven't spun up container `r3` with its own OSPF daemon yet.
 ~~~
 5ca07541895a# show ip ospf neighbor
 
@@ -87,8 +117,9 @@ Spin up `r3` on network `net2` and give it the appropriate `frr.conf` which actu
 ~~~
 frr_venore$ docker run -d --init --privileged --name frr-ubuntu22-demo1-r3 --network net2 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo2_ospf-across-two-networks/frrconf_files/r3:/etc/frr frr-ubuntu22:latest
 ~~~
+The `eth0` interface of this `r3` container will be assigned IP address `10.0.2.3`. 
 
-## Checking OSPF daemon status
+## Checking OSPF daemon status - do `r1` and `r31 discover the other networks?
 
 Now `r2`'s OSPF daemon can see the OSPF router `3.3.3.3` running on `r3` in the neighbor table:
 ~~~
@@ -100,7 +131,7 @@ Neighbor ID     Pri State           Up Time         Dead Time Address         In
 
 ~~~
 
-And critically, on `r1` the router `1.1.1.1` discovers the route to `10.0.2.0/24`, and that it is via `10.0.1.3` i.e. via `r2`.
+And critically, on `r1` the router `1.1.1.1` discovers the route to the other network `10.0.2.0/24`, and that it is via `10.0.1.3` i.e. via `r2`.  It must have learnt this route via `r2`.
 ~~~
 eea8ed44d4b7# show ip ospf route
 ============ OSPF network routing table ============
@@ -113,3 +144,5 @@ N    10.0.2.0/24           [20] area: 0.0.0.0
 
 ============ OSPF external routing table ===========
 ~~~
+
+TO DO:  check `r3` can see the `10.0.1.0/24` network.
