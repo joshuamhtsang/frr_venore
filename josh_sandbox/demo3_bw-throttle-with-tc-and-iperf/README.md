@@ -16,7 +16,7 @@ $ iperf -c 10.0.1.3
 ## Streaming video with ffmpeg and vlc
 
 ~~~
-$ ffmpeg -re -stream_loop -1 -i gabbie.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.2:3434/live/stream"
+$ ffmpeg -re -stream_loop -1 -i motorway_lowres.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.2:3434/live/stream"
 ~~~
 
 
