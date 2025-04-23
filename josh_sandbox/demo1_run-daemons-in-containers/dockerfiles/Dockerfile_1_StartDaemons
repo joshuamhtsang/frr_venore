@@ -35,6 +35,8 @@ RUN apt update && apt upgrade -y && \
             tmux \
             netcat-traditional \
             iperf3 \
+            openssh-server \
+            vim \
     && \
     # Protobuf build requirements
     apt-get install -y \
