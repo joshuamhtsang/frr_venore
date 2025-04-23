@@ -1,5 +1,13 @@
 
 
+
+## Run container with port binding
+
+~~~
+$ docker run -d --init --privileged --name frr-ubuntu22-demo1-r1 --network net1 --mount type=bind,source=/lib/modules,target=/lib/modules -v ./josh_sandbox/demo1_run-daemons-in-containers/frrconf_files/r1:/etc/frr -p 3434:3434 frr-ubuntu22:latest
+~~~
+
+
 ## Testing throughput with iperf
 
 Run iperf server on `r2`
