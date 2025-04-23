@@ -37,6 +37,7 @@ RUN apt update && apt upgrade -y && \
             iperf3 \
             openssh-server \
             vim \
+            x11-apps \
     && \
     # Protobuf build requirements
     apt-get install -y \
