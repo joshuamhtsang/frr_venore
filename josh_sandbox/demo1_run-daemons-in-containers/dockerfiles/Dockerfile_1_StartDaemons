@@ -38,6 +38,8 @@ RUN apt update && apt upgrade -y && \
             openssh-server \
             vim \
             x11-apps \
+            socat \
+            ffmpeg \
     && \
     # Protobuf build requirements
     apt-get install -y \
