@@ -132,7 +132,8 @@ $ sudo tc qdisc add dev eth0 root tbf rate 1mbit burst 32kbit latency 5ms
 
 ~~~
 TESTER for bytes fifo
-$ sudo tc qdisc add dev eth0 root bfifo limit 1000
+$ sudo tc qdisc add dev eth0 root bfifo limit 5000
+$ sudo tc qdisc change dev eth0 root bfifo limit 1000
 ~~~
 
 NetEm example:
