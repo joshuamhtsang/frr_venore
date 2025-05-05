@@ -84,51 +84,32 @@ udp://@10.0.1.1:3434/live/stream
 
 # DRAFT NOTES BELOW
 
-## Testing throughput with iperf
+## iPerf Testing
 
-Run iperf server on `r2`
+Run iperf server on `n2`
 ~~~
-$ iperf -s
-~~~
-
-Run iperf client on `r1`
-~~~
-$ iperf -c 10.0.1.3
+$ iperf3 -s
 ~~~
 
-
-## Streaming video with ffmpeg and vlc
-
+Run iperf client on `n1`
 ~~~
-$ ffmpeg -re -stream_loop -1 -i motorway_lowres.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.3:3434/live/stream"
+$ iperf3 -c 10.0.1.3
 ~~~
 
-
-## Forwarding video to host to play streamed video with VLC
-
-~~~
-$ socat UDP-LISTEN:3434 UDP:10.0.1.1:3434
-~~~
+I find that the token bucket qdisc works quite well to throttle the iperf performance, while bfifo has no effect unitl <1000 bytes per second.
 
 
-On the host machine, open the stream with VLC at network address:
-~~~
-udp://@10.0.1.1:3434/live/stream
-~~~
-
-
-Restore normal queue discpline:
-~~~
-$ sudo tc qdisc replace dev eth0 root pfifo
-~~~
-
-## Throttle bitrate throughput of eth0 interface on `r1`
+## Throttle bitrate throughput of eth0 interface on `n1`
 
 Token Bucket Filter exmaple:
 ~~~
 $ sudo tc qdisc add dev eth0 root tbf rate 1mbit burst 32kbit latency 5ms
 ~~~
 
+Restore normal queue discpline:
+~~~
+$ sudo tc qdisc replace dev eth0 root pfifo
+~~~
 
 ~~~
 TESTER for bytes fifo
