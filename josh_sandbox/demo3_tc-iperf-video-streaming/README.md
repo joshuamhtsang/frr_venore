@@ -51,6 +51,8 @@ This container redirects the incoming video stream to the host machine (10.0.1.1
 $ docker run -d --init --privileged --name frr_venore-demo3-n2 --network net1 frr_venore:demo3_n2
 ~~~
 
+Socat in a while bash loop continually, see the [bash script](dockerfiles/demo3_n2.sh).
+
 ## Start stream in `n1` container
 
 Docker exec into the container:
@@ -71,10 +73,13 @@ Note how we are directing the stream to `n2`'s IP address. I suppose this addres
 
 Open VLC and enter the network URL:
 ~~~
+$ vlc
+~~~
+~~~
 udp://@10.0.1.1:3434/live/stream
 ~~~
 
-
+![Bashmu](images/ffmpeg_playing_video.png)
 
 
 # DRAFT NOTES BELOW
@@ -122,6 +127,12 @@ $ sudo tc qdisc replace dev eth0 root pfifo
 Token Bucket Filter exmaple:
 ~~~
 $ sudo tc qdisc add dev eth0 root tbf rate 1mbit burst 32kbit latency 5ms
+~~~
+
+
+~~~
+TESTER for bytes fifo
+$ sudo tc qdisc add dev eth0 root bfifo limit 1000
 ~~~
 
 NetEm example:
