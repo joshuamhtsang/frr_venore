@@ -3,7 +3,17 @@
 
 ## Network Schematic of Demo 3
 
-<Put schematic here>
+The network schematic is shown below.
+
+![cryptwarden](images/demo3_schematic.png)
+![Bashmu](images/ffmpeg_playing_video.png)
+
+This demo doesn't use frr, but explores tools like :
+
+- `tc` (traffic control) which provides a means to define queue disciplines and throttle the speed of interfaces.  
+- `iperf3` which provides a way to measure the maximum link throughput
+- `ffmpeg` for video streaming
+- `socat` for redirecting socket data flows
 
 n2 redirects the stream to the host because it's easier to view a stream on the host machine and saves the effort of setting up display and X display in n2.
 
@@ -82,22 +92,21 @@ udp://@10.0.1.1:3434/live/stream
 ![Bashmu](images/ffmpeg_playing_video.png)
 
 
-# DRAFT NOTES BELOW
+## Measuring link throughput with iPerf3
 
-## iPerf Testing
-
-Run iperf server on `n2`
+Run iperf3 server on `n2`:
 ~~~
 $ iperf3 -s
 ~~~
 
-Run iperf client on `n1`
+Run iperf3 client on `n1`:
 ~~~
 $ iperf3 -c 10.0.1.3
 ~~~
 
 I find that the token bucket qdisc works quite well to throttle the iperf performance, while bfifo has no effect unitl <1000 bytes per second.
 
+# !!!DRAFT NOTES BELOW!!!
 
 ## Throttle bitrate throughput of eth0 interface on `n1`
 
