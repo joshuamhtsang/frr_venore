@@ -91,10 +91,6 @@ WORKDIR /home/demo3/
 
 USER ${user}
 
-ENV videoname=motorway_lowres.mp4
+COPY --chown=${user}:${user} ./josh_sandbox/demo3_tc-iperf-video-streaming/dockerfiles/demo3_n2.sh /home/demo3/
 
-COPY --chown=${user}:${user} ./josh_sandbox/demo3_tc-iperf-video-streaming/videos/${videoname} /home/demo3/videos/
-
-COPY --chown=${user}:${user} ./josh_sandbox/demo3_tc-iperf-video-streaming/dockerfiles/demo3.sh /home/demo3/
-
-CMD ["/home/demo3/demo3.sh"]
+CMD ["/home/demo3/demo3_n2.sh"]

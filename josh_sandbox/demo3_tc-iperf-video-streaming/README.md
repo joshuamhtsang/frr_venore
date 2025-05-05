@@ -5,6 +5,7 @@
 
 <Put schematic here>
 
+n2 redirects the stream to the host because it's easier to view a stream on the host machine and saves the effort of setting up display and X display in n2.
 
 ## Create network (`net1`) using docker command
 
@@ -24,20 +25,59 @@ br-abaa46ceff04: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
 <...TRUNCATED...>
 ~~~
 
-## Build docker image for video streaming nodes
-Build the docker images by running the following docker command from the root directory of the repository (`frr_venore/`).  Both `n1` and `n2` will be based off the same image.
+## Build docker images for nodes `n1` and `n2`
+
+Build the docker images by running the following docker commands from the root directory of the repository (`frr_venore/`). The main difference between the dockerfiles for `n1` and `n2` is the command (CMD) run when the container starts.  For `n1`:
 ~~~
-$ docker build -t frr_venore:demo3_node -f josh_sandbox/demo3_tc-iperf-video-streaming/dockerfiles/Dockerfile_demo3_VideoStreaming .
+$ docker build -t frr_venore:demo3_n1 -f josh_sandbox/demo3_tc-iperf-video-streaming/dockerfiles/Dockerfile_demo3_n1 .
+~~~
+
+For `n2`:
+~~~
+$ docker build -t frr_venore:demo3_n2 -f josh_sandbox/demo3_tc-iperf-video-streaming/dockerfiles/Dockerfile_demo3_n2 .
+~~~
+
+## Run container for node `n1`: video stream source
+
+This container will be the source of the the ffmpeg stream.
+~~~
+$ docker run -d --init --privileged --name frr_venore-demo3-n1 --network net1 frr_venore:demo3_n1
+~~~
+
+## Run container for node `n2`: video stream destination
+
+This container redirects the incoming video stream to the host machine (10.0.1.1) using 'socat' (SOcket CAT).
+~~~
+$ docker run -d --init --privileged --name frr_venore-demo3-n2 --network net1 frr_venore:demo3_n2
+~~~
+
+## Start stream in `n1` container
+
+Docker exec into the container:
+
+~~~
+$ docker exec -it frr_venore-demo3-n1 bash
+~~~
+
+And begin the stream:
+
+~~~
+$ ffmpeg -re -stream_loop -1 -i motorway_lowres.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.3:3434/live/stream"
+~~~
+
+Note how we are directing the stream to `n2`'s IP address. I suppose this address could be a multicast address too. The stream format is 'mpegts' (MPEG Transport Stream).
+
+## Start listening for the stream on the host machine
+
+Open VLC and enter the network URL:
+~~~
+udp://@10.0.1.1:3434/live/stream
 ~~~
 
 
-## Run container for node n1
 
-Ensure port binding `3434:3434` is done.
-~~~
-$ docker run -d --init --privileged --name frr_venore-demo3-n1 --network net1 -p 3434:3434 frr_venore:demo3_node
-~~~
 
+# DRAFT NOTES BELOW
 
 ## Testing throughput with iperf
 
@@ -55,14 +95,14 @@ $ iperf -c 10.0.1.3
 ## Streaming video with ffmpeg and vlc
 
 ~~~
-$ ffmpeg -re -stream_loop -1 -i motorway_lowres.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.2:3434/live/stream"
+$ ffmpeg -re -stream_loop -1 -i motorway_lowres.mp4 -vcodec copy -acodec copy -f mpegts "udp://10.0.1.3:3434/live/stream"
 ~~~
 
 
 ## Forwarding video to host to play streamed video with VLC
 
 ~~~
-$ socat socat UDP-LISTEN:3434 UDP:10.0.1.1:3434
+$ socat UDP-LISTEN:3434 UDP:10.0.1.1:3434
 ~~~
 
 
