@@ -24,18 +24,18 @@ A new network `net1` will be created with 2 docker containers (`r1` and `r2`) at
 The expectation is that the OSPF daemons to see neighbouring OSPF routers, and these will be evident in the OSPF neighbor, link state database and routing tables.
 
 ## Docker build image command
-To build the docker images, run the following docker commands from the repository (frr_venore) root. Both routers r1 and r2 will be based off the same image.
+To build the docker images, run the following docker command from the root directory of the repository (`frr_venore/`). Both routers r1 and r2 will be based off the same image.
 ~~~
 $ docker build -t frr-ubuntu22:latest -f josh_sandbox/demo1_run-daemons-in-containers/dockerfiles/Dockerfile_1_StartDaemons .
 ~~~
 
-## Create a new network using docker
+## Create a new network (`net1`) using docker
 
 To make the demo more reproducible, it's good practice to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge with the assigned network specification.
 
 Create the network (called `net1`) with this docker command:
 ~~~
-docker network create --driver=bridge --subnet=10.0.1.0/24 net1
+$ docker network create --driver=bridge --subnet=10.0.1.0/24 net1
 ~~~
 
 Containers created on this network (with the `--network net1` flag during `docker run`) will be assigned ascending IP addressed from `10.0.1.2` and upwards on the `eth0` interface. For this demo, the OSPF daemons on r1 and r2 will be assigned to work these `eth0` interfaces.  The `10.0.1.1` address will actually be the gateway (which you can verify with `docker network inspect net1`).  You can even see this network with `ifconfig`:
