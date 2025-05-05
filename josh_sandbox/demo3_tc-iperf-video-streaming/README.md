@@ -56,12 +56,13 @@ $ docker run -d --init --privileged --name frr_venore-demo3-n1 --network net1 fr
 
 ## Run container for node `n2`: video stream destination
 
-This container redirects the incoming video stream to the host machine (10.0.1.1) using 'socat' (SOcket CAT).
+This container redirects the incoming video stream from `n1` to the host machine (10.0.1.1) using 'socat' (SOcket CAT).
 ~~~
 $ docker run -d --init --privileged --name frr_venore-demo3-n2 --network net1 frr_venore:demo3_n2
 ~~~
 
-Socat in a while bash loop continually, see the [bash script](dockerfiles/demo3_n2.sh).
+Socat is initiated in a while bash loop continually, see the [bash script](dockerfiles/demo3_n2.sh).  If it isn't enclosed in a while loop with 'continue' the docker container will stop if socat throws an error, which we don't want.  Socat will throw an error if the destination socket is not listening.
+
 
 ## Start stream in `n1` container
 
