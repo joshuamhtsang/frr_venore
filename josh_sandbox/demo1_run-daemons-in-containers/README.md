@@ -1,6 +1,8 @@
 # Demo 1: Running OSPF daemon and other foundational daemons in a docker container
 
-The key to this demo is the script `docker-start-1-StartDaemons` [here](./dockerfiles/docker-start-1-StartDaemons) which runs the frr daemons in the background.  Note there is a (rather unsafe) way to run the daemons using systemd by using the `cap_add=net_raw` etc. options when running a container, but this approach is not used (it is used in [this](https://github.com/ksator/frrouting_demo) github repo by ksator though ).
+The key to this demo is the script `docker-start-1-StartDaemons` [here](./dockerfiles/docker-start-1-StartDaemons) which runs the frr daemons in the background.  Note there is a (rather unsafe) way to run the daemons using systemd by using the `cap_add=net_raw` etc. options when running a container, but this approach is not used (it is used in [this](https://github.com/ksator/frrouting_demo) github repo by ksator, for instance).
+
+As a bonus, there is also an 'Exposition of Linux bridges' at the end of this demo.
 
 ## Network topology of demo 1
 
@@ -135,6 +137,10 @@ As mentioned above, the `docker network create` command creates a Linux bridge f
 - Show the ARP cache using the `ip neigh` command
 
 Hopefully this is educational even for an understanding of how layer 2 switching works.  Remember, hosts store `ARP cache` (IP-to-MAC table) while switches/bridges store `MAC addr table' (MAC-to-Port table).
+
+This is a diagram showing the relationship between all the components.
+
+![lion](images/linux_bridge_diagram_2.png)
 
 After the `net1` network is created by Docker, you can view the 'fdb table' on the bridge (in this case, `br-31abaedd7ba9`) using `bridge fdb show`:
 ~~~
