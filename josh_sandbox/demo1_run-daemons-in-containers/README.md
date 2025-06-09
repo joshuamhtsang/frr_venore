@@ -118,13 +118,19 @@ N    10.0.1.0/24           [10] area: 0.0.0.0
 
 ## Cleaning up after the demo
 
-Other than stopping and removing all the containers above, we may want to cleanly remove the docker network `net1` we created.  Delete the network with this docker command:
+Stopping and remove all the containers above:
+
+~~~
+$ docker rm -f frr-ubuntu22-demo1-r1 frr-ubuntu22-demo1-r2
+~~~
+
+ We should also remove the docker network `net1` we created with this command:
 
 ~~~
 $ docker network rm net1
 ~~~
 
-This removes the `br-<blah>` from the listing under `ifconfig`.
+This removes the `br-<uuid>` from the listing under `ifconfig`.
 
 ## Bonus: An exposition of Linux bridges
 
