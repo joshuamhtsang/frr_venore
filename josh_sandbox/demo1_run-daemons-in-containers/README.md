@@ -31,14 +31,14 @@ $ docker build -t frr-ubuntu22:latest -f josh_sandbox/demo1_run-daemons-in-conta
 
 ## Create a new network (`net1`) using docker
 
-To make the demo more reproducible, it's good practice to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge with the assigned network specification.
+To make the demo more reproducible, it's good practice to create another network, in this case a `10.0.1.0/24` one.  In effect, this creates a Linux bridge network with the assigned network specification.  It is instructive to think of a bridge as a software switch (layer 2 device), with an associated MAC address table (MAC-to-port) or Forwarding Database (fdb) table.
 
 Create the network (called `net1`) with this docker command:
 ~~~
 $ docker network create --driver=bridge --subnet=10.0.1.0/24 net1
 ~~~
 
-Containers created on this network (with the `--network net1` flag during `docker run`) will be assigned ascending IP addressed from `10.0.1.2` and upwards on the `eth0` interface. For this demo, the OSPF daemons on r1 and r2 will be assigned to work these `eth0` interfaces.  The `10.0.1.1` address will actually be the gateway (which you can verify with `docker network inspect net1`).  You can even see this network with `ifconfig`:
+Containers created on this network (with the `--network net1` flag during `docker run`) will be assigned ascending IP addressed from `10.0.1.2` and upwards on the `eth0` interface. For this demo, the OSPF daemons on r1 and r2 will be assigned to work these `eth0` interfaces.  The `10.0.1.1` address will actually be the gateway (which you can verify with `docker network inspect net1`).  You can even see this network with `ifconfig` on the host:
 
 ~~~
 $ ifconfig
@@ -51,6 +51,7 @@ br-c4c5fe0bfed2: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
         TX errors 0  dropped 13 overruns 0  carrier 0  collisions 0
 ~~~
 
+Note that the `br-*` name designation signifies this is a Linux bridge.
 
 ## Run a container for router 1 (r1)
 Things to note:
@@ -111,6 +112,116 @@ N    10.0.1.0/24           [10] area: 0.0.0.0
 ============ OSPF router routing table =============
 
 ============ OSPF external routing table ===========
+~~~
 
+## Cleaning up after the demo
+
+Other than stopping and removing all the containers above, we may want to cleanly remove the docker network `net1` we created.  Delete the network with this docker command:
 
 ~~~
+$ docker network rm net1
+~~~
+
+This removes the `br-<blah>` from the listing under `ifconfig`.
+
+## Bonus: An exposition of Linux bridges
+
+As mentioned above, the `docker network create` command creates a Linux bridge for `net1`, which operates a bit like a layer-2 switch.  This bonus section ties up several key concepts, including:
+
+- Linux bridges (and how to see them with `ifconfig`)
+- Understanding the forwarding database (fdb) table on the bridge
+- New fdb entries introduced as containers are connected to the bridge
+- The role of `veth` in connecting the containers to the bridge
+- Show the ARP cache using the `ip neigh` command
+
+Hopefully this is educational even for an understanding of how layer 2 switching works.  Remember, hosts store `ARP cache` (IP-to-MAC table) while switches/bridges store `MAC addr table' (MAC-to-Port table).
+
+After the `net1` network is created by Docker, you can view the 'fdb table' on the bridge (in this case, `br-31abaedd7ba9`) using `bridge fdb show`:
+~~~
+$ bridge fdb show | grep br-
+33:33:00:00:00:01 dev br-31abaedd7ba9 self permanent
+01:00:5e:00:00:6a dev br-31abaedd7ba9 self permanent
+33:33:00:00:00:6a dev br-31abaedd7ba9 self permanent
+01:00:5e:00:00:01 dev br-31abaedd7ba9 self permanent
+01:00:5e:00:00:fb dev br-31abaedd7ba9 self permanent
+ea:49:a6:c9:a3:a8 dev br-31abaedd7ba9 vlan 1 master br-31abaedd7ba9 permanent
+ea:49:a6:c9:a3:a8 dev br-31abaedd7ba9 master br-31abaedd7ba9 permanent
+~~~
+
+This shows are mapping of MAC address to device/port, similar to a physical switch. The first 5 entries are IPv4 and IPv6 multicast addresses, and are introduced by default.  The final 2 entries relate to the MAC address of the virtual interface created on the host to connect to this bridge.  MAC addresses are labelled as `ether` under `ifconfig` (i.e. `ether ea:49:a6:c9:a3:a8`):
+
+~~~
+$ ifconfig
+br-31abaedd7ba9: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.1.1  netmask 255.255.255.0  broadcast 10.0.1.255
+        inet6 fe80::e849:a6ff:fec9:a3a8  prefixlen 64  scopeid 0x20<link>
+        ether ea:49:a6:c9:a3:a8  txqueuelen 0  (Ethernet)
+        RX packets 16  bytes 820 (820.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 38  bytes 5553 (5.5 KB)
+        TX errors 0  dropped 19 overruns 0  carrier 0  collisions 0
+~~~
+
+When a container like `r1` is connected to this docker network/bridge, new fdb entries are added. The important ones to note are those relating to the `veth` interface created to connect the container to the bridge:
+
+~~~
+$ bridge fdb show | grep br-
+<TRUNCATED>
+ee:85:ed:11:e8:51 dev vethb7a34fb master br-31abaedd7ba9
+d6:e0:99:b0:a1:33 dev vethb7a34fb vlan 1 master br-31abaedd7ba9 permanent
+d6:e0:99:b0:a1:33 dev vethb7a34fb master br-31abaedd7ba9 permanent
+<TRUNCATED>
+~~~
+
+Where there are 2 unique MAC address here:
+
+  - `d6:e0:99:b0:a1:33` is the end of the `veth` interface connected to the bridge
+  - `ee:85:ed:11:e8:51` is the end of the `veth` interface connected to the container
+
+This can be verified by running `ifconfig` on the host (yielding `d6:e0:99:b0:a1:33`):
+~~~
+$ ifconfig
+vethb7a34fb: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet6 fe80::d4e0:99ff:feb0:a133  prefixlen 64  scopeid 0x20<link>
+        ether d6:e0:99:b0:a1:33  txqueuelen 0  (Ethernet)
+        RX packets 16  bytes 1044 (1.0 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 63  bytes 8624 (8.6 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+~~~
+
+and also inside container `r1` (yielding `ee:85:ed:11:e8:51`):
+
+~~~
+frr@d8c349a2a69d:~/frr$ ifconfig
+
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.1.2  netmask 255.255.255.0  broadcast 10.0.1.255
+        ether ee:85:ed:11:e8:51  txqueuelen 0  (Ethernet)
+        RX packets 132  bytes 21887 (21.8 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 180  bytes 13836 (13.8 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+~~~
+
+Also inside `r1`, if you do `ip neigh` you get nothing returned, because there is no OSPF discovered neighbour yet (`r2` isn't run yet!).  So let's run container `r2`, and do run `ip neigh` in the `r1` container again:
+
+~~~
+frr@d8c349a2a69d:~/frr$ ip neigh
+10.0.1.3 dev eth0 lladdr 4a:5d:af:1d:07:c9 REACHABLE proto zebra
+~~~
+
+We can see the ARP cache (IP-to-MAC address mapping) entry for `r2` (IP addr `10.0.1.3`), and indeed the MAC address there (`4a:5d:af:1d:07:c9`) is the MAC address you find if you run `ifconfig` in the `r2` container:
+
+~~~
+frr@9252efdc44a0:~/frr$ ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.0.1.3  netmask 255.255.255.0  broadcast 10.0.1.255
+        ether 4a:5d:af:1d:07:c9  txqueuelen 0  (Ethernet)
+        RX packets 108  bytes 12511 (12.5 KB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 59  bytes 4558 (4.5 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+~~~
+
+There are some questions remaining, such as whether the full ARP workflow is used to populate the ARP cache and MAC address tables in the containers and bridge respectively.  
