@@ -25,6 +25,10 @@ A new network `net1` will be created with 2 docker containers (`r1` and `r2`) at
 
 The expectation is that the OSPF daemons to see neighbouring OSPF routers, and these will be evident in the OSPF neighbor, link state database and routing tables.
 
+The Linux bridge perspective includes a bit more detail, including the MAC addresses on both ends of the `veth` interfaces that branch from the bridge.
+
+![lion](images/linux_bridge_diagram_2.png)
+
 ## Docker build image command
 To build the docker images, run the following docker command from the root directory of the repository (`frr_venore/`). Both routers r1 and r2 will be based off the same image.
 ~~~
